@@ -1,0 +1,54 @@
+# TABMATE キーマッピング設定
+# 各モードのボタンに割り当てるキーを指定します。
+# 省略したボタンはデフォルト値が使われます。
+#
+# 使用可能なキー名:
+#   アルファベット  : A - Z (大文字小文字不問)
+#   数字          : 0 - 9
+#   ファンクション  : F1 - F24
+#   修飾キー       : Ctrl / RightCtrl / Alt / RightAlt / Shift / RightShift / Super
+#   特殊キー       : Space, Enter, Esc, Tab, BackSpace, Delete, Insert
+#                   Home, End, PageUp, PageDown, CapsLock
+#   矢印キー       : Up, Down, Left, Right
+#   記号           : Minus, Equal, LeftBrace, RightBrace, SemiColon,
+#                   Apostrophe, Grave, BackSlash, Slash, Comma, Dot
+
+[mode1]
+side_top    = "LeftCtrl"
+side_bottom = "LeftAlt"
+a           = "Z"
+b           = "X"
+c           = "C"
+d           = "V"
+wheel_up    = "Up"
+wheel_down  = "Down"
+wheel_push  = "Enter"
+back        = "Esc"
+up          = "W"
+down        = "S"
+left        = "A"
+right       = "D"
+q           = "Space"
+
+[mode2]
+side_top    = "LeftCtrl"
+side_bottom = "LeftAlt"
+a           = "F1"
+b           = "F2"
+c           = "F3"
+d           = "F4"
+wheel_up    = "Up"
+wheel_down  = "Down"
+wheel_push  = "Enter"
+back        = "Esc"
+up          = "Up"
+down        = "Down"
+left        = "Left"
+right       = "Right"
+q           = "Space"
+
+# [mode3]
+# 設定しない場合はデフォルト値が使われます
+
+# [mode4]
+# 設定しない場合はデフォルト値が使われます
