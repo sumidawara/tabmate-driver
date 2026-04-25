@@ -2,9 +2,50 @@ use std::error::Error;
 use std::time::Duration;
 use evdev::Device as PhysDevice;
 
-
 mod config;
 mod mapping;
+
+use config::Action;
+
+/// モディファイアを押した状態でメインキーを click する（一回きり）
+fn send_click(dev: &mut uinput::Device, actions: &[Action]) -> Result<(), uinput::Error> {
+    let (modifiers, main) = actions.split_at(actions.len().saturating_sub(1));
+
+    // 1. 修飾キーを全部セット
+    for a in modifiers {
+        a.press(dev)?;
+    }
+    // 2. メインキーを叩く
+    if let Some(a) = main.first() {
+        a.press(dev)?;
+        dev.synchronize()?; // ここで「同時押し」状態を通知
+        a.release(dev)?;
+    }
+    // 3. 修飾キーを離す
+    for a in modifiers.iter().rev() {
+        a.release(dev)?;
+    }
+    dev.synchronize()?; // ここで「全部離した」状態を通知
+    Ok(())
+}
+
+/// コンボキーを全て押す（hold モード用）
+fn send_press(dev: &mut uinput::Device, actions: &[Action]) -> Result<(), uinput::Error> {
+    for a in actions {
+        a.press(dev)?;
+        dev.synchronize()?;
+    }
+    Ok(())
+}
+
+/// コンボキーを全て離す（hold モード用）
+fn send_release(dev: &mut uinput::Device, actions: &[Action]) -> Result<(), uinput::Error> {
+    for a in actions.iter().rev() {
+        a.release(dev)?;
+        dev.synchronize()?;
+    }
+    Ok(())
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -17,7 +58,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // ハードウェアコードと仮想キーのマッピングを用意
     // tabmate.toml が存在すればそこから読み込み、なければデフォルト設定を使用
     let hw_map = mapping::get_hardware_map();
-    let key_config = config::load_key_config(std::path::Path::new("tabmate.toml"));
+    let key_maps = config::load_key_maps(std::path::Path::new("tabmate.toml"));
+
+    // uinput 仮想キーボードは起動時に1回だけ作成して使い回す。
+    // BT再接続のたびに作り直すと、OSがデバイスを認識する前にキーイベントが
+    // 送られてしまい、最初の数イベントがバッファされて遅延出力される問題があった。
+    let mut virtual_device = uinput::default()?
+        .name("TABMATE Virtual Keyboard")?
+        .event(uinput::event::Keyboard::All)?
+        .event(uinput::event::Controller::Mouse(uinput::event::controller::Mouse::Left))?
+        .event(uinput::event::Controller::Mouse(uinput::event::controller::Mouse::Right))?
+        .event(uinput::event::Controller::Mouse(uinput::event::controller::Mouse::Middle))?
+        .event(uinput::event::Controller::Mouse(uinput::event::controller::Mouse::Side))?
+        .event(uinput::event::Controller::Mouse(uinput::event::controller::Mouse::Extra))?
+        .event(uinput::event::Controller::Mouse(uinput::event::controller::Mouse::Forward))?
+        .event(uinput::event::Controller::Mouse(uinput::event::controller::Mouse::Back))?
+        .create()?;
+    // デバイスがX11/Wayland等に認識されるまで少し待つ
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    println!("仮想キーボード準備完了");
 
     loop {
         println!("TABMATEを探しています (MAC: {})...", tabmate_addr);
@@ -47,32 +106,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         tokio::time::sleep(Duration::from_secs(2)).await;
 
-        // 全デバイスを列挙して TABMATE を探す
-        // 優先度1: BTN_TL (code=310, masterブランチで動作確認済み) をサポートするデバイス
-        // 優先度2: 名前に "tabmate" を含むデバイス (大文字小文字無視)
-        println!("=== 利用可能な入力デバイス一覧 ===");
-        let mut path_by_cap: Option<std::path::PathBuf> = None;
-        let mut path_by_name: Option<std::path::PathBuf> = None;
+        // TABMATE のゲームパッドプロファイルノードを探す
+        // TABMATEは2つのevdevノードを持つ:
+        //   "TABMATE"          → ゲームパッドプロファイル (BTN_TL あり) ← これが必要
+        //   "TABMATE Keyboard" → キーボードプロファイル  (BTN_TL なし)
+        let mut phys_dev_path = None;
         for (path, dev) in evdev::enumerate() {
-            let name = dev.name().unwrap_or("(名前なし)");
+            let name = dev.name().unwrap_or("").to_lowercase();
             let has_btn_tl = dev.supported_keys()
                 .map(|keys| keys.contains(evdev::KeyCode::BTN_TL))
                 .unwrap_or(false);
-            println!("  {:?}  名前={}  BTN_TL={}", path, name, has_btn_tl);
-
-            if has_btn_tl && path_by_cap.is_none() {
-                path_by_cap = Some(path.clone());
-            }
-            if name.to_lowercase().contains("tabmate") && path_by_name.is_none() {
-                path_by_name = Some(path);
+            if name.contains("tabmate") && has_btn_tl {
+                phys_dev_path = Some(path);
+                break;
             }
         }
-        println!("===================================");
 
-        let path = match path_by_cap.or(path_by_name) {
+        let path = match phys_dev_path {
             Some(p) => p,
             None => {
-                println!("TABMATEデバイスが見つかりません。再試行します...");
+                println!("evdev にTABMATEデバイスが見つかりません。再試行します...");
                 tokio::time::sleep(Duration::from_secs(3)).await;
                 continue;
             }
@@ -94,63 +147,113 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!("警告: デバイスの grab に失敗しました: {}", e);
         }
 
-        let mut virtual_device = uinput::default()?
-            .name("TABMATE Virtual Keyboard")?
-            .event(uinput::event::Keyboard::All)?
-            .create()?;
+        // 非同期ストリームに変換する。
+        // fetch_events() はBluetoothの遅延でプレスとリリースを同じバッチで返すことがある。
+        // next_event().await はイベントを1つずつtokio経由で受け取るため、
+        // プレスとリリースが必ず別タイミングで処理される。
+        let mut stream = match phys_dev.into_event_stream() {
+            Ok(s) => s,
+            Err(e) => {
+                println!("イベントストリームの作成に失敗しました: {}", e);
+                tokio::time::sleep(Duration::from_secs(3)).await;
+                continue;
+            }
+        };
 
         println!("ドライバー稼働開始...");
 
-        // evdevからイベントを読み出すループ
+        // 各ボタンの現在の押下状態を管理するセット (重複した同方向イベントを無視)
+        let mut button_state: std::collections::HashSet<(mapping::Mode, mapping::Button)> =
+            std::collections::HashSet::new();
+        // (ボタン, value) ごとの最後の発火時刻を保持し、デバウンスする
+        // TABMATEが完全な press-release サイクルを短時間で複数回送る現象に対処
+        let mut last_event_time: std::collections::HashMap<
+            (mapping::Mode, mapping::Button, i32),
+            std::time::Instant,
+        > = std::collections::HashMap::new();
+        const DEBOUNCE: Duration = Duration::from_millis(80);
+
+        let session_start = std::time::Instant::now();
+
         loop {
-            let events = match phys_dev.fetch_events() {
-                Ok(evs) => evs,
+            let event = match stream.next_event().await {
+                Ok(ev) => ev,
                 Err(e) => {
                     println!("イベントの読み出しに失敗しました (切断されましたか?): {}", e);
-                    // 切断されたと思われるので、Bluetooth接続待ちのループに戻る
                     break;
                 }
             };
 
-            for event in events {
-                let ev_type = event.event_type().0;
-                let code = event.code();
-                let value = event.value();
+            // EV_KEY (type=1) のみ処理
+            if event.event_type().0 != 1 {
+                continue;
+            }
+            let code = event.code();
+            let value = event.value();
 
-                // 全イベントをデバッグ出力 (type=0はEV_SYN同期イベントなので除外)
-                if ev_type != 0 {
-                    println!("[RAW] type={} code={} value={}", ev_type, code, value);
+            let Some(&(mode, button)) = hw_map.get(&code) else {
+                continue;
+            };
+
+            let now = std::time::Instant::now();
+            let elapsed_ms = now.duration_since(session_start).as_millis();
+            println!("[RAW {}ms] code={} value={} button={:?}", elapsed_ms, code, value, button);
+
+            // 時間ベースのデバウンス: 同じ (button, value) が短時間で再到着したら無視
+            let event_key = (mode, button, value);
+            if let Some(last) = last_event_time.get(&event_key) {
+                if now.duration_since(*last) < DEBOUNCE {
+                    println!("  → デバウンスでスキップ ({}ms以内)", DEBOUNCE.as_millis());
+                    continue;
                 }
+            }
+            last_event_time.insert(event_key, now);
 
-                // event_type == 1 は EV_KEY
-                if ev_type == 1 {
-                    if value == 1 || value == 0 {
-                        if let Some(&(mode, button)) = hw_map.get(&code) {
-                            if let Some(&key) = key_config.get(&(mode, button)) {
-                                let result = if value == 1 {
-                                    virtual_device.press(&key)
-                                } else {
-                                    virtual_device.release(&key)
-                                };
-                                if let Err(e) = result {
-                                    println!("uinput エラー (press/release): {}", e);
-                                }
-                                if let Err(e) = virtual_device.synchronize() {
-                                    println!("uinput エラー (synchronize): {}", e);
-                                }
-                            } else {
-                                println!("key_config にキーが見つかりません: {:?} {:?}", mode, button);
-                            }
-                        } else {
-                            println!("hw_map に未登録のコード: {} (value={})", code, value);
+            let is_hold = key_maps.hold.contains(&(mode, button));
+
+            // 押し込んだとき
+            if value == 1 {
+                if !button_state.insert((mode, button)) {
+                    println!("  → 既に押下中なのでスキップ");
+                    continue;
+                }
+                if let Some(keys) = key_maps.press.get(&(mode, button)) {
+                    let action = if is_hold { "press(hold)" } else { "click" };
+                    println!("  ⇒ {} keys={:?}", action, keys);
+                    let result = if is_hold {
+                        send_press(&mut virtual_device, keys)
+                    } else {
+                        send_click(&mut virtual_device, keys)
+                    };
+                    if let Err(e) = result {
+                        eprintln!("uinput エラー (press): {}", e);
+                    }
+                }
+            
+            //　離したとき
+            } else if value == 0 {
+                if !button_state.remove(&(mode, button)) {
+                    println!("  → 押下状態でないのでスキップ");
+                    continue;
+                }
+                if is_hold {
+                    if let Some(keys) = key_maps.press.get(&(mode, button)) {
+                        println!("  ⇒ release(hold) keys={:?}", keys);
+                        if let Err(e) = send_release(&mut virtual_device, keys) {
+                            eprintln!("uinput エラー (release): {}", e);
                         }
+                    }
+                }
+                if let Some(keys) = key_maps.release.get(&(mode, button)) {
+                    println!("  ⇒ release-click keys={:?}", keys);
+                    if let Err(e) = send_click(&mut virtual_device, keys) {
+                        eprintln!("uinput エラー (click on release): {}", e);
                     }
                 }
             }
         }
 
-        // Grabの解除（念のため）
-        let _ = phys_dev.ungrab();
+        // stream がドロップされるとgrabも自動解除される
         println!("切断を検知しました。再接続モードに入ります。");
     }
 }

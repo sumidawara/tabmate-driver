@@ -1,6 +1,10 @@
-# TABMATE キーマッピング設定
-# 各モードのボタンに割り当てるキーを指定します。
-# 省略したボタンはデフォルト値が使われます。
+# TABMATE キーマッピング設定 (Krita 用)
+#
+# xxx         = "Key"  → ボタンを押したとき Key を1回入力（リピートなし）
+# xxx_hold    = true   → 長押しで連打（xxx と組み合わせる）
+# xxx_release = "Key"  → ボタンを手放したとき Key を1回入力（省略可）
+#
+# コンボキーは "+" でつなぐ: "Ctrl+Z", "Ctrl+Shift+Z", "Shift+Space" など
 #
 # 使用可能なキー名:
 #   アルファベット  : A - Z (大文字小文字不問)
@@ -10,45 +14,83 @@
 #   特殊キー       : Space, Enter, Esc, Tab, BackSpace, Delete, Insert
 #                   Home, End, PageUp, PageDown, CapsLock
 #   矢印キー       : Up, Down, Left, Right
-#   記号           : Minus, Equal, LeftBrace, RightBrace, SemiColon,
-#                   Apostrophe, Grave, BackSlash, Slash, Comma, Dot
+#   記号           : Minus(-), Equal(=), LeftBrace([), RightBrace(])
+#                   SemiColon(;), Slash(/), Comma(,), Dot(.)
 
 [mode1]
-side_top    = "LeftCtrl"
-side_bottom = "LeftAlt"
-a           = "Z"
-b           = "X"
-c           = "C"
-d           = "V"
-wheel_up    = "Up"
-wheel_down  = "Down"
-wheel_push  = "Enter"
-back        = "Esc"
-up          = "W"
-down        = "S"
-left        = "A"
-right       = "D"
-q           = "Space"
+side_top        = "Ctrl+Z"         # 取り消し (Undo)
+side_bottom     = "Ctrl+Shift+Z"   # やり直し (Redo)
+a               = "Shift+Space"    # キャンバス回転 (Rotate) - 長押しで保持
+a_hold          = true
+b               = "Space"          # 手のひら (Pan) - 長押しで保持
+b_hold          = true
+c               = "J"              # 投げなわ選択 (任意割当、デフォルトショートカットなし)
+c_release       = "B"
+d               = "F"              # 塗りつぶし (Fill)
+d_release       = "B"
+wheel_up        = "Ctrl+Equal"     # 拡大 (Zoom In)
+wheel_down      = "Ctrl+Minus"     # 縮小 (Zoom Out)
+wheel_push      = ""            
+back            = "Ctrl"           # 色選択 (スポイトツール)
+up              = "Tab"            # Docker非表示
+down            = "Ctrl+T"         # 変形 (Transform)
+right           = "M"              # キャンバス左右反転
+left            = "LeftBrace"      # ブラシサイズ減少 ([)
+q               = "Shift"          # ポップアップパレット（右クリック）
 
 [mode2]
-side_top    = "LeftCtrl"
-side_bottom = "LeftAlt"
-a           = "F1"
-b           = "F2"
-c           = "F3"
-d           = "F4"
-wheel_up    = "Up"
-wheel_down  = "Down"
-wheel_push  = "Enter"
-back        = "Esc"
-up          = "Up"
-down        = "Down"
-left        = "Left"
-right       = "Right"
-q           = "Space"
+side_top        = "Ctrl+Z"
+side_bottom     = "Ctrl+Shift+Z"
+a               = "Space"
+a_hold          = true
+b               = "Shift+Space"
+b_hold          = true
+c               = "L"
+d               = "F"
+wheel_up        = "Ctrl+Equal"
+wheel_down      = "Ctrl+Minus"
+wheel_push      = "Tab"
+back            = "P"
+up              = "RightBrace"
+down            = "Ctrl+T"
+right           = "M"
+left            = "LeftBrace"
+q               = "E"
 
-# [mode3]
-# 設定しない場合はデフォルト値が使われます
+[mode3]
+side_top        = "Ctrl+Z"
+side_bottom     = "Ctrl+Shift+Z"
+a               = "Space"
+a_hold          = true
+b               = "Shift+Space"
+b_hold          = true
+c               = "L"
+d               = "F"
+wheel_up        = "Ctrl+Equal"
+wheel_down      = "Ctrl+Minus"
+wheel_push      = "Tab"
+back            = "P"
+up              = "RightBrace"
+down            = "Ctrl+T"
+right           = "M"
+left            = "LeftBrace"
+q               = "E"
 
-# [mode4]
-# 設定しない場合はデフォルト値が使われます
+[mode4]
+side_top        = "Ctrl+Z"
+side_bottom     = "Ctrl+Shift+Z"
+a               = "Space"
+a_hold          = true
+b               = "Shift+Space"
+b_hold          = true
+c               = "L"
+d               = "F"
+wheel_up        = "Ctrl+Equal"
+wheel_down      = "Ctrl+Minus"
+wheel_push      = "Tab"
+back            = "P"
+up              = "RightBrace"
+down            = "Ctrl+T"
+right           = "M"
+left            = "LeftBrace"
+q               = "E"

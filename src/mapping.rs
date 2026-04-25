@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use uinput::event::keyboard::Key;
 
+use crate::config::Action;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Mode {
     Mode1,
@@ -66,27 +68,25 @@ pub fn get_hardware_map() -> HashMap<u16, (Mode, Button)> {
     map
 }
 
-/// 論理的なボタンから出力する仮想キーへのマッピング（将来的にはJSON/TOML等から読み込む想定）
-pub fn default_key_config() -> HashMap<(Mode, Button), Key> {
+/// 論理的なボタンから出力するアクション列へのデフォルトマッピング
+pub fn default_key_config() -> HashMap<(Mode, Button), Vec<Action>> {
     let mut config = HashMap::new();
     let hw_map = get_hardware_map();
 
-    // デフォルトの設定として、各ボタンに適当なキーを割り当てる
     for (_code, (mode, button)) in hw_map {
         let key = match (mode, button) {
-            (_, Button::WheelUp) => Key::Up,
+            (_, Button::WheelUp)   => Key::Up,
             (_, Button::WheelDown) => Key::Down,
             (_, Button::WheelPush) => Key::Enter,
-            (_, Button::Up) => Key::W,
-            (_, Button::Down) => Key::S,
-            (_, Button::Left) => Key::A,
-            (_, Button::Right) => Key::D,
+            (_, Button::Up)        => Key::W,
+            (_, Button::Down)      => Key::S,
+            (_, Button::Left)      => Key::A,
+            (_, Button::Right)     => Key::D,
             (Mode::Mode1, Button::A) => Key::A,
             (Mode::Mode1, Button::B) => Key::B,
-            // 適宜割り当て。エラーにならないよう全ての組み合わせにデフォルトを設定
             _ => Key::Space,
         };
-        config.insert((mode, button), key);
+        config.insert((mode, button), vec![Action::Key(key)]);
     }
 
     config

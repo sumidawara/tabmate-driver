@@ -252,6 +252,7 @@ dependencies = [
  "cfg-if 1.0.4",
  "libc",
  "nix 0.29.0",
+ "tokio",
 ]
 
 [[package]]
