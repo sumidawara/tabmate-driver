@@ -1,6 +1,8 @@
 use std::error::Error;
 use std::time::Duration;
 use evdev::Device as PhysDevice;
+use futures::StreamExt;
+use bluer::{DeviceEvent, DeviceProperty};
 
 mod config;
 mod mapping;
@@ -90,17 +92,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         };
 
+        // 先にイベントストリームを作成して、イベントの取りこぼしを防ぐ
+        let mut events = match device.events().await {
+            Ok(evs) => evs,
+            Err(e) => {
+                println!("イベントの監視に失敗しました: {}", e);
+                tokio::time::sleep(Duration::from_secs(3)).await;
+                continue;
+            }
+        };
+
         if !device.is_connected().await.unwrap_or(false) {
-            println!("TABMATEに接続を試みます...");
-            match device.connect().await {
-                Ok(_) => {
-                    println!("Bluetooth 接続成功！");
+            println!("TABMATEの接続を待機しています... (電源を入れてください)");
+
+            let mut connected = false;
+            while let Some(event) = events.next().await {
+                if let DeviceEvent::PropertyChanged(DeviceProperty::Connected(true)) = event {
+                    println!("Bluetooth 接続を検知しました！");
+                    connected = true;
+                    break;
                 }
-                Err(e) => {
-                    println!("接続待ち... (電源を入れ直してください): {}", e);
-                    tokio::time::sleep(Duration::from_secs(3)).await;
-                    continue;
-                }
+            }
+
+            if !connected {
+                println!("イベントストリームが終了しました。再試行します...");
+                tokio::time::sleep(Duration::from_secs(3)).await;
+                continue;
             }
         }
 
