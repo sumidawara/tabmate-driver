@@ -56,9 +56,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let tabmate_addr: bluer::Address = "20:73:10:00:D5:52".parse()?;
 
     // ハードウェアコードと仮想キーのマッピングを用意
-    // tabmate.toml が存在すればそこから読み込み、なければデフォルト設定を使用
+    // config.toml が存在すればそこから読み込み、なければデフォルト設定を使用
     let hw_map = mapping::get_hardware_map();
-    let key_maps = config::load_key_maps(std::path::Path::new("tabmate.toml"));
+    let key_maps = config::load_key_maps(std::path::Path::new("config.toml"));
 
     // uinput 仮想キーボードは起動時に1回だけ作成して使い回す。
     // BT再接続のたびに作り直すと、OSがデバイスを認識する前にキーイベントが

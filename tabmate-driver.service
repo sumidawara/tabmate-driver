@@ -1,0 +1,21 @@
+[Unit]
+Description=TABMATE Bluetooth Driver
+Documentation=https://github.com/sumidawara/tabmate-driver
+After=bluetooth.target
+Wants=bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/tabmate-driver
+WorkingDirectory=/etc/tabmate-driver
+Restart=on-failure
+RestartSec=5
+# uinput と evdev へのアクセスに必要
+User=root
+
+# ログを journalctl に出力
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
