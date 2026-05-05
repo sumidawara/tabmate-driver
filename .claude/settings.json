@@ -3,7 +3,8 @@
     "allow": [
       "Bash(git mv *)",
       "Bash(make help *)",
-      "Read(//etc/systemd/system/**)"
+      "Read(//etc/systemd/system/**)",
+      "Bash(git checkout *)"
     ]
   }
 }
