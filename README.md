@@ -1,6 +1,6 @@
 # tabmate-driver
 
-CLIP STUDIO TABMATE の Linux 用ドライバーです。
+CLIP STUDIO TABMATE の Linux(wayland) 用ドライバーです。
 Bluetooth で接続し、ボタン入力をキーボード・マウスイベントとして送出します。
 
 ## 必要なもの
@@ -13,7 +13,7 @@ Bluetooth で接続し、ボタン入力をキーボード・マウスイベン�
 ## セットアップ
 
 ### 1. クローン
-
+b
 ```sh
 git clone https://github.com/sumidawara/tabmate-driver.git
 cd tabmate-driver
@@ -38,10 +38,11 @@ bluetoothctl
 ### 3. 実行
 
 ```sh
-cargo sudo-run
+cargo build --release
+sudo ./target/release/tabmate-driver
 ```
 
-ビルドして root で起動します（uinput / evdev のアクセスに root 権限が必要）。
+uinput / evdev のアクセスに root 権限が必要です。
 
 ## キーマップのカスタマイズ
 

@@ -1,3 +1,0 @@
-[alias]
-# ビルドして root で実行
-sudo-run = "!cargo build --release && sudo ./target/release/tabmate-driver"
