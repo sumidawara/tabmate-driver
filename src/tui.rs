@@ -13,13 +13,12 @@ use ratatui::{
     Terminal,
 };
 use std::io;
-use std::sync::Arc;
 use tokio::sync::watch;
 
 use crate::driver::{ConnectionStatus, DriverState};
 
 pub async fn run(
-    enabled_tx: Arc<watch::Sender<bool>>,
+    enabled_tx: watch::Sender<bool>,
     mut state_rx: watch::Receiver<DriverState>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     enable_raw_mode()?;
@@ -40,7 +39,7 @@ pub async fn run(
 
 async fn run_inner(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
-    enabled_tx: Arc<watch::Sender<bool>>,
+    enabled_tx: watch::Sender<bool>,
     state_rx: &mut watch::Receiver<DriverState>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut event_stream = EventStream::new();
