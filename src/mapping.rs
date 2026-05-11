@@ -68,26 +68,64 @@ pub fn get_hardware_map() -> HashMap<u16, (Mode, Button)> {
     map
 }
 
-/// 論理的なボタンから出力するアクション列へのデフォルトマッピング
+/// 論理的なボタンから出力するアクション列へのデフォルトマッピング (mode1 と同じ内容)
 pub fn default_key_config() -> HashMap<(Mode, Button), Vec<Action>> {
+    use Key::*;
     let mut config = HashMap::new();
-    let hw_map = get_hardware_map();
 
-    for (_code, (mode, button)) in hw_map {
-        let key = match (mode, button) {
-            (_, Button::WheelUp)   => Key::Up,
-            (_, Button::WheelDown) => Key::Down,
-            (_, Button::WheelPush) => Key::Enter,
-            (_, Button::Up)        => Key::W,
-            (_, Button::Down)      => Key::S,
-            (_, Button::Left)      => Key::A,
-            (_, Button::Right)     => Key::D,
-            (Mode::Mode1, Button::A) => Key::A,
-            (Mode::Mode1, Button::B) => Key::B,
-            _ => Key::Space,
-        };
-        config.insert((mode, button), vec![Action::Key(key)]);
+    let modes = [Mode::Mode1, Mode::Mode2, Mode::Mode3, Mode::Mode4];
+    for mode in modes {
+        let entries: &[(Button, &[Key])] = &[
+            (Button::SideTop,    &[LeftControl, Z]),
+            (Button::SideBottom, &[LeftControl, LeftShift, Z]),
+            (Button::A,          &[LeftShift, Space]),
+            (Button::B,          &[Space]),
+            (Button::C,          &[J]),
+            (Button::D,          &[F]),
+            (Button::WheelUp,    &[LeftControl, Equal]),
+            (Button::WheelDown,  &[LeftControl, Minus]),
+            (Button::Back,       &[LeftControl]),
+            (Button::Up,         &[Tab]),
+            (Button::Down,       &[LeftControl, T]),
+            (Button::Right,      &[M]),
+            (Button::Left,       &[Delete]),
+            (Button::Q,          &[L]),
+        ];
+        for (button, keys) in entries {
+            let actions = keys.iter().map(|k| Action::Key(*k)).collect();
+            config.insert((mode, *button), actions);
+        }
+        // WheelPush は空 (何もしない)
     }
 
     config
+}
+
+/// デフォルトの release アクションマッピング (mode1 と同じ内容)
+pub fn default_release_config() -> HashMap<(Mode, Button), Vec<Action>> {
+    use Key::*;
+    let mut config = HashMap::new();
+
+    let modes = [Mode::Mode1, Mode::Mode2, Mode::Mode3, Mode::Mode4];
+    for mode in modes {
+        // c_release = "B", d_release = "B"
+        config.insert((mode, Button::C), vec![Action::Key(B)]);
+        config.insert((mode, Button::D), vec![Action::Key(B)]);
+    }
+
+    config
+}
+
+/// デフォルトの hold ボタン集合 (mode1 と同じ内容)
+pub fn default_hold_config() -> std::collections::HashSet<(Mode, Button)> {
+    let mut hold = std::collections::HashSet::new();
+
+    let modes = [Mode::Mode1, Mode::Mode2, Mode::Mode3, Mode::Mode4];
+    for mode in modes {
+        // a_hold = true, b_hold = true
+        hold.insert((mode, Button::A));
+        hold.insert((mode, Button::B));
+    }
+
+    hold
 }

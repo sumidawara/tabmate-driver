@@ -314,8 +314,8 @@ fn apply_mode_config(
 /// ファイルが存在しない場合やパースエラーの場合はデフォルト設定で返す。
 pub fn load_key_maps(path: &Path) -> KeyMaps {
     let mut press = crate::mapping::default_key_config();
-    let mut release = HashMap::new();
-    let mut hold = HashSet::new();
+    let mut release = crate::mapping::default_release_config();
+    let mut hold = crate::mapping::default_hold_config();
 
     let content = match std::fs::read_to_string(path) {
         Ok(s) => s,
