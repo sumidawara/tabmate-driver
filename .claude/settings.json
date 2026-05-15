@@ -4,7 +4,10 @@
       "Bash(git mv *)",
       "Bash(make help *)",
       "Read(//etc/systemd/system/**)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(ls -la ~/.config/fcitx5/ 2>&1 | head -30)",
+      "Read(//home/sumidawara/.config/fcitx5/**)",
+      "Read(//home/sumidawara/.config/mozc/**)"
     ]
   }
 }

@@ -82,7 +82,7 @@ pub fn default_key_config() -> HashMap<(Mode, Button), Vec<Action>> {
             (Button::B,          &[Space]),
             (Button::C,          &[J]),
             (Button::D,          &[F]),
-            (Button::WheelUp,    &[LeftControl, Equal]),
+            (Button::WheelUp,    &[LeftControl, LeftShift, Minus]),
             (Button::WheelDown,  &[LeftControl, Minus]),
             (Button::Back,       &[LeftControl]),
             (Button::Up,         &[Tab]),
